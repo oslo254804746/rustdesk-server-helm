@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rustdesk-hbbs-service
+  labels:
+    {{- include "rustdesk-server.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.portConfigs.hbbs.type }}
+  ports:
+    - name: "hbbs-nat-port"
+      port: {{ .Values.portConfigs.hbbs.natPort.port }}
+      protocol: TCP
+      targetPort: 21115
+    - name: "hbbs-registry-port"
+      port: {{ .Values.portConfigs.hbbs.registryPort.port }}
+      targetPort: 21116
+      protocol: TCP
+    - name: "hbbs-heartbeat-port"
+      port: {{ .Values.portConfigs.hbbs.heartbeatPort.port }}
+      protocol: UDP
+      targetPort: 21116
+    {{ if .Values.portConfigs.hbbs.webPort.enable }}
+    - port: {{ .Values.portConfigs.hbbs.webPort.port }}
+      targetPort: 21118
+      protocol: TCP
+      name: "hbbs-web-port"
+    {{end}}
+  selector:
+    {{- include "rustdesk-server.selectorLabels" . | nindent 4 }}

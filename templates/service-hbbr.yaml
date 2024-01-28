@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rustdesk-hbbr-service
+  labels:
+    {{- include "rustdesk-server.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.portConfigs.hbbr.type }}
+  ports:
+    - name: "hbbr-relay-port"
+      targetPort: {{ .Values.portConfigs.hbbr.replayPort.targetPort }}
+      port: {{ .Values.portConfigs.hbbr.replayPort.port }}
+      protocol: TCP
+    {{ if .Values.portConfigs.hbbr.clientPort.enable }}
+    - name: "hbbr-client-port"
+      targetPort: {{.Values.portConfigs.hbbr.clientPort.targetPort }}
+      port: {{ .Values.portConfigs.hbbr.clientPort.port }}
+      protocol: TCP
+    {{ end }}
+  selector:
+    {{- include "rustdesk-server.selectorLabels" . | nindent 4 }}

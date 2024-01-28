@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rustdesk-server.fullname" . }}
+  labels:
+    {{- include "rustdesk-server.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "rustdesk-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "rustdesk-server.labels" . | nindent 8 }}
+	{{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "rustdesk-server.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: "rustdesk-server-hbbr"
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: "relay-port"
+              containerPort: {{ .Values.portConfigs.hbbr.replayPort.targetPort }}
+              protocol: TCP
+            {{ if .Values.portConfigs.hbbr.clientPort.enable }}
+            - name: "client-port"
+              containerPort: {{ .Values.portConfigs.hbbr.clientPort.targetPort }}
+              protocol: TCP
+            {{- end }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.portConfigs.hbbr.replayPort.targetPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.portConfigs.hbbr.replayPort.targetPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources.hbbrResource | nindent 12 }}
+          {{- with .Values.volumeMounts.hbbrVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          command:
+            - hbbr
+          args:
+            - -k
+            - _
+        - name: "rustdesk-server-hbbs"
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: "nat-port"
+              containerPort: {{ .Values.portConfigs.hbbs.natPort.targetPort }}
+              protocol: TCP
+            - name: "registry-port"
+              containerPort: {{ .Values.portConfigs.hbbs.registryPort.targetPort }}
+              protocol: TCP
+            - name: "heartbeat-port"
+              containerPort: {{ .Values.portConfigs.hbbs.heartbeatPort.targetPort }}
+              protocol: UDP
+            {{ if .Values.portConfigs.hbbs.webPort.enable }}
+            - name: "web-port"
+              containerPort: {{ .Values.portConfigs.hbbs.webPort.targetPort }}
+              protocol: TCP
+            {{- end }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.portConfigs.hbbs.natPort.targetPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.portConfigs.hbbs.natPort.targetPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources.hbbsResource | nindent 12 }}
+          {{- with .Values.volumeMounts.hbbsVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          command:
+            - hbbs
+          args:
+            - -k
+            - _
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
