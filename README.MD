@@ -1,8 +1,7 @@
-[中文文档](https://github.com/oslo254804746/rustdesk-server-helm/blob/master/README_zh.md)
+[中文文档](https://github.com/oslo254804746/rustdesk-server-helm/blob/master/README_zh.MD)
 
 
-[English](https://github.com/oslo254804746/rustdesk-server-helm/blob/master/README.md)
-
+[English](https://github.com/oslo254804746/rustdesk-server-helm/blob/master/README.MD)
 
 ## Introduction
 This is a chart for rustdesk-server
