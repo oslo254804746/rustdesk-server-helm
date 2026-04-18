@@ -28,6 +28,72 @@ serviceAccount:
 podAnnotations: {}
 podLabels: {}
 
+# Use host network for pods
+# When enabled, pods use the host's network namespace.
+# This does NOT by itself preserve client IP when traffic comes through a Kubernetes Service.
+# It also has important tradeoffs:
+#   - Container ports must be unique per node, which limits replicas per node
+#   - Reduces network isolation
+#   - Direct access to host network interfaces
+# Prefer `service.externalTrafficPolicy: Local` for LoadBalancer/NodePort Services when the goal
+# is to preserve client source IP. Enable hostNetwork only when direct host networking is required.
+hostNetwork: false
+
+# RustDesk server configuration
+# IMPORTANT: When using LoadBalancer, you must set the relay server IP
+# This tells hbbs what external IP to advertise to clients for peer-to-peer connections
+rustdesk:
+  # Relay server IP - set this to your LoadBalancer IP or public IP
+  # Leave empty when using hostNetwork: true (it will auto-detect)
+  # REQUIRED when hostNetwork: false and using LoadBalancer
+  relayServer: ""
+  # Example: relayServer: "192.168.1.100"
+
+# Service configurations
+service:
+  # External traffic policy for both services (hbbs and hbbr)
+  # Options: Local, Cluster
+  # Local preserves client source IP and avoids second hop, but requires healthy local endpoints
+  externalTrafficPolicy: Local
+  
+  # Annotations to add to both services (hbbs and hbbr)
+  # Example:
+  # annotations:
+  #   service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+  #   prometheus.io/scrape: "true"
+  #   metallb.universe.tf/allow-shared-ip: "rustdesk"
+  annotations: {}
+  
+  # Labels to add to both services (hbbs and hbbr)
+  # Example:
+  # labels:
+  #   team: infrastructure
+  #   environment: production
+  labels: {}
+  
+  # Service-specific configurations
+  hbbs:
+    # LoadBalancer IP for hbbs service (only used when service type is LoadBalancer)
+    # Leave empty to auto-assign
+    loadBalancerIP: ""
+    # Annotations specific to hbbs service
+    annotations: {}
+      # service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+    # Labels specific to hbbs service
+    labels: {}
+      # component: signal-server
+  
+  hbbr:
+    # LoadBalancer IP for hbbr service (only used when service type is LoadBalancer)
+    # Leave empty to auto-assign
+    loadBalancerIP: ""
+    # Annotations specific to hbbr service
+    annotations: {}
+      # service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+    # Labels specific to hbbr service
+    labels: {}
+      # component: relay-server
+
 podSecurityContext: {}
   # fsGroup: 2000
 

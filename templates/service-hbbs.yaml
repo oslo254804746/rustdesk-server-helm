@@ -3,9 +3,21 @@ kind: Service
 metadata:
   name: rustdesk-hbbs-service
   labels:
-    {{- include "rustdesk-server.labels" . | nindent 4 }}
+    {{- $labels := mergeOverwrite (dict) (include "rustdesk-server.labels" . | fromYaml) (.Values.service.labels | default dict) (.Values.service.hbbs.labels | default dict) }}
+    {{- toYaml $labels | nindent 4 }}
+  {{- $annotations := mergeOverwrite (dict) (.Values.service.annotations | default dict) (.Values.service.hbbs.annotations | default dict) }}
+  {{- with $annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.portConfigs.hbbs.type }}
+  {{- if and .Values.service.externalTrafficPolicy (or (eq .Values.portConfigs.hbbs.type "NodePort") (eq .Values.portConfigs.hbbs.type "LoadBalancer")) }}
+  externalTrafficPolicy: {{ .Values.service.externalTrafficPolicy }}
+  {{- end }}
+  {{- if and .Values.service.hbbs.loadBalancerIP (eq .Values.portConfigs.hbbs.type "LoadBalancer") }}
+  loadBalancerIP: {{ .Values.service.hbbs.loadBalancerIP }}
+  {{- end }}
   ports:
     - name: "hbbs-nat-port"
       port: {{ .Values.portConfigs.hbbs.natPort.port }}

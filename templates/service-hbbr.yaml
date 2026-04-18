@@ -3,9 +3,21 @@ kind: Service
 metadata:
   name: rustdesk-hbbr-service
   labels:
-    {{- include "rustdesk-server.labels" . | nindent 4 }}
+    {{- $labels := mergeOverwrite (dict) (include "rustdesk-server.labels" . | fromYaml) (.Values.service.labels | default dict) (.Values.service.hbbr.labels | default dict) }}
+    {{- toYaml $labels | nindent 4 }}
+  {{- $annotations := mergeOverwrite (dict) (.Values.service.annotations | default dict) (.Values.service.hbbr.annotations | default dict) }}
+  {{- with $annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.portConfigs.hbbr.type }}
+  {{- if and .Values.service.externalTrafficPolicy (or (eq .Values.portConfigs.hbbr.type "NodePort") (eq .Values.portConfigs.hbbr.type "LoadBalancer")) }}
+  externalTrafficPolicy: {{ .Values.service.externalTrafficPolicy }}
+  {{- end }}
+  {{- if and .Values.service.hbbr.loadBalancerIP (eq .Values.portConfigs.hbbr.type "LoadBalancer") }}
+  loadBalancerIP: {{ .Values.service.hbbr.loadBalancerIP }}
+  {{- end }}
   ports:
     - name: "hbbr-relay-port"
       targetPort: {{ .Values.portConfigs.hbbr.replayPort.targetPort }}
